@@ -15,8 +15,10 @@ app.use(cors());
 app.use(express.json());
 
 const userRoutes = require('./routes/userRoutes');
+const habitRoutes = require('./routes/habitRoutes');
 
 app.use('/api/users', userRoutes);
+app.use('/api/habits', habitRoutes);
 
 app.get('/', (req, res) => {
     res.send('Backend Running');
