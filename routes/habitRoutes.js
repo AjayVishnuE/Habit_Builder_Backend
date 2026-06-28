@@ -6,7 +6,8 @@ const {
     createHabit,
     getHabits,
     completeHabit,
-    deleteHabit
+    deleteHabit,
+    updateHabit
 } = require('../controllers/habitController');
 
 const {
@@ -17,5 +18,6 @@ router.post('/', protect, createHabit);
 router.get('/', protect, getHabits);
 router.put('/:id/complete', protect, completeHabit);
 router.delete('/:id', protect, deleteHabit);
+router.put('/:id', protect, updateHabit);
 
 module.exports = router;
