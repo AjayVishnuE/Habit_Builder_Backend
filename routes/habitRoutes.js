@@ -5,7 +5,8 @@ const router = express.Router();
 const {
     createHabit,
     getHabits,
-    completeHabit
+    completeHabit,
+    deleteHabit
 } = require('../controllers/habitController');
 
 const {
@@ -15,5 +16,6 @@ const {
 router.post('/', protect, createHabit);
 router.get('/', protect, getHabits);
 router.put('/:id/complete', protect, completeHabit);
+router.delete('/:id', protect, deleteHabit);
 
 module.exports = router;

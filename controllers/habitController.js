@@ -83,6 +83,30 @@ const completeHabit = async (req, res) => {
     }
 };
 
+const deleteHabit = async (req, res) => {
+    try {
+        const habit = await Habit.findById(req.params.id);
+        if (!habit) {
+            return res.status(404).json({
+                message: "Habit not found"
+            });
+        }
+        if (habit.user.toString() !== req.user._id.toString()) {
+            return res.status(401).json({
+                message: "Not authorized"
+            });
+        }
+        await habit.deleteOne();
+        res.json({
+            message: "Habit deleted successfully"
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
+
 const calculateStreak = (completedDates) => {
     if (completedDates.length === 0) {
         return 0;
@@ -113,5 +137,6 @@ const calculateStreak = (completedDates) => {
 module.exports = {
     createHabit,
     getHabits,
-    completeHabit
+    completeHabit,
+    deleteHabit
 };
