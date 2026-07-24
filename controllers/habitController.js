@@ -1,29 +1,20 @@
 const Habit = require('../models/Habit');
 
 const createHabit = async (req, res) => {
-
     try {
-
-        const { title, description } = req.body;
-
+        const { title, description, frequency } = req.body;
         const habit = await Habit.create({
-
             user: req.user._id,
             title,
-            description
-
+            description,
+            frequency
         });
-
         res.status(201).json(habit);
-
     } catch (error) {
-
         res.status(500).json({
             message: error.message
         });
-
     }
-
 };
 
 const getHabits = async (req, res) => {
@@ -31,21 +22,18 @@ const getHabits = async (req, res) => {
         const habits = await Habit.find({
             user: req.user._id
         });
-        
         const habitsWithStreak = habits.map(habit => {
             return {
                 ...habit._doc,
                 streak: calculateStreak(habit.completedDates)
             };
         });
-
         res.json(habitsWithStreak);
     } catch (error) {
         res.status(500).json({
             message: error.message
         });
     }
-
 };
 
 const completeHabit = async (req, res) => {
