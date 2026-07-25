@@ -44,23 +44,46 @@ const completeHabit = async (req, res) => {
                 message: 'Habit not found'
             });
         }
-
         if (habit.user.toString() !== req.user._id.toString()) {
             return res.status(401).json({
                 message: 'Not authorized'
             });
         }
         const today = new Date();
-        const alreadyCompletedToday = habit.completedDates.some((date) => {
-            return new Date(date).toDateString() === today.toDateString();
-        });
-
-        if (alreadyCompletedToday) {
+        let alreadyCompleted = false;
+        switch (habit.frequency) {
+            case 'Daily':
+                alreadyCompleted = habit.completedDates.some(date => new Date(date).toDateString() === today.toDateString() );
+                break;
+            case 'Weekly':
+                alreadyCompleted = habit.completedDates.some(date => {
+                    const completedDate = new Date(date);
+                    const startOfWeek = new Date(today);
+                    startOfWeek.setDate(today.getDate() - today.getDay());
+                    startOfWeek.setHours(0, 0, 0, 0);
+                    const endOfWeek = new Date(startOfWeek);
+                    endOfWeek.setDate(startOfWeek.getDate() + 6);
+                    endOfWeek.setHours(23, 59, 59, 999);
+                    return completedDate >= startOfWeek && completedDate <= endOfWeek;
+                });
+                break;
+            case 'Monthly':
+                alreadyCompleted = habit.completedDates.some(date => {
+                    const completedDate = new Date(date);
+                    return (
+                        completedDate.getMonth() === today.getMonth() &&
+                        completedDate.getFullYear() === today.getFullYear()
+                    );
+                });
+                break;
+            default:
+                alreadyCompleted = false;
+        }
+        if (alreadyCompleted) {
             return res.status(400).json({
-                message: 'Habit already completed today'
+                message: `Habit already completed for this ${habit.frequency.toLowerCase()}`
             });
         }
-
         habit.completedDates.push(today);
         await habit.save();
         res.json(habit);
