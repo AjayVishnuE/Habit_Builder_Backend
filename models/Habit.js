@@ -18,11 +18,27 @@ const habitSchema = mongoose.Schema({
         enum: ['Daily', 'Weekly', 'Monthly'],
         default: 'Daily'
     },
-    completedDates: [
+    completedHistory: [
         {
-            type: Date
+            completedAt: {
+                type: Date,
+                required: true
+            },
+            remark: {
+                type: String,
+                default: ''
+            },
+            mood: {
+                type: String,
+                enum: ['Excellent', 'Good', 'Okay', 'Bad'],
+                default: 'Good'
+            },
+            duration: {
+                type: Number,
+                default: 0
+            }
         }
-    ]
+    ],
 }, {
     timestamps: true
 });

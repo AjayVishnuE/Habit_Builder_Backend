@@ -22,12 +22,10 @@ const getHabits = async (req, res) => {
         const habits = await Habit.find({
             user: req.user._id
         });
-        const habitsWithStreak = habits.map(habit => {
-            return {
-                ...habit._doc,
-                streak: calculateStreak(habit.completedDates)
-            };
-        });
+        const habitsWithStreak = habits.map(habit => ({
+            ...habit._doc,
+            streak: calculateStreak(habit.completedHistory)
+        }));
         res.json(habitsWithStreak);
     } catch (error) {
         res.status(500).json({
@@ -53,23 +51,28 @@ const completeHabit = async (req, res) => {
         let alreadyCompleted = false;
         switch (habit.frequency) {
             case 'Daily':
-                alreadyCompleted = habit.completedDates.some(date => new Date(date).toDateString() === today.toDateString() );
+                alreadyCompleted = habit.completedHistory.some(entry =>
+                    new Date(entry.completedAt).toDateString() === today.toDateString()
+                );
                 break;
             case 'Weekly':
-                alreadyCompleted = habit.completedDates.some(date => {
-                    const completedDate = new Date(date);
+                alreadyCompleted = habit.completedHistory.some(entry => {
+                    const completedDate = new Date(entry.completedAt);
                     const startOfWeek = new Date(today);
                     startOfWeek.setDate(today.getDate() - today.getDay());
                     startOfWeek.setHours(0, 0, 0, 0);
                     const endOfWeek = new Date(startOfWeek);
                     endOfWeek.setDate(startOfWeek.getDate() + 6);
                     endOfWeek.setHours(23, 59, 59, 999);
-                    return completedDate >= startOfWeek && completedDate <= endOfWeek;
+                    return (
+                        completedDate >= startOfWeek &&
+                        completedDate <= endOfWeek
+                    );
                 });
                 break;
             case 'Monthly':
-                alreadyCompleted = habit.completedDates.some(date => {
-                    const completedDate = new Date(date);
+                alreadyCompleted = habit.completedHistory.some(entry => {
+                    const completedDate = new Date(entry.completedAt);
                     return (
                         completedDate.getMonth() === today.getMonth() &&
                         completedDate.getFullYear() === today.getFullYear()
@@ -84,7 +87,12 @@ const completeHabit = async (req, res) => {
                 message: `Habit already completed for this ${habit.frequency.toLowerCase()}`
             });
         }
-        habit.completedDates.push(today);
+        habit.completedHistory.push({
+            completedAt: today,
+            remark: '',
+            mood: 'Good',
+            duration: 0
+        });
         await habit.save();
         res.json(habit);
     } catch (error) {
@@ -147,12 +155,12 @@ const updateHabit = async (req, res) => {
     }
 };
 
-const calculateStreak = (completedDates) => {
-    if (completedDates.length === 0) {
+const calculateStreak = (completedHistory) => {
+    if (!completedHistory || completedHistory.length === 0) {
         return 0;
     }
-    const sortedDates = completedDates
-        .map(date => new Date(date))
+    const sortedDates = completedHistory
+        .map(entry => new Date(entry.completedAt))
         .sort((a, b) => b - a);
     let streak = 1;
     for (let i = 0; i < sortedDates.length - 1; i++) {
