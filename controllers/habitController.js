@@ -139,12 +139,15 @@ const updateHabit = async (req, res) => {
                 message: "Not authorized"
             });
         }
-        const { title, description } = req.body;
+        const { title, description, frequency } = req.body;
         if (title !== undefined) {
             habit.title = title;
         }
         if (description !== undefined) {
             habit.description = description;
+        }
+        if (frequency !== undefined) {
+            habit.frequency = frequency;
         }
         const updatedHabit = await habit.save();
         res.json(updatedHabit);
