@@ -89,9 +89,9 @@ const completeHabit = async (req, res) => {
         }
         habit.completedHistory.push({
             completedAt: today,
-            remark: '',
-            mood: 'Good',
-            duration: 0
+            remark: req.body.remark || '',
+            mood: req.body.mood || 'Good',
+            duration: req.body.duration || 0
         });
         await habit.save();
         res.json(habit);
