@@ -239,6 +239,20 @@ const matchesPeriod = (date1, date2, frequency) => {
     }
 };
 
+const isSameWeek = (date1, date2) => {
+    const startOfWeek = (date) => {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        d.setDate(d.getDate() + diff);
+        d.setHours(0, 0, 0, 0);
+        return d;
+    };
+    return (
+        startOfWeek(date1).getTime() === startOfWeek(date2).getTime()
+    );
+};
+
 const getHabitById = async (req, res) => {
     try {
         const habit = await Habit.findById(req.params.id);
@@ -250,7 +264,7 @@ const getHabitById = async (req, res) => {
         }
         res.json({
             ...habit._doc,
-            streak: calculateStreak(habit.completedHistory),
+            streak: calculateStreak( habit.completedHistory, habit.frequency ),            
             longestStreak: calculateLongestStreak(habit.completedHistory)
         });
 
@@ -262,6 +276,8 @@ const getHabitById = async (req, res) => {
 
     }
 };
+
+
 
 module.exports = {
     createHabit,
