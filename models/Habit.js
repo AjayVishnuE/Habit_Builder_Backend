@@ -30,7 +30,7 @@ const habitSchema = mongoose.Schema({
             },
             mood: {
                 type: String,
-                enum: ['Excellent', 'Good', 'Okay', 'Bad'],
+                enum: ['Excellent', 'Great', 'Good', 'Okay', 'Bad'],
                 default: 'Good'
             },
             duration: {
