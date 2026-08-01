@@ -1,4 +1,5 @@
 const Habit = require('../models/Habit');
+const { calculateCurrentStreak,calculateLongestStreak } = require('../utils/streak.util');
 
 const createHabit = async (req, res) => {
     try {
@@ -9,7 +10,11 @@ const createHabit = async (req, res) => {
             description,
             frequency
         });
-        res.status(201).json(habit);
+        res.status(201).json({
+            ...habit._doc,
+            currentStreak: 0,
+            longestStreak: 0
+        });
     } catch (error) {
         res.status(500).json({
             message: error.message
@@ -22,12 +27,14 @@ const getHabits = async (req, res) => {
         const habits = await Habit.find({
             user: req.user._id
         });
-        const habitsWithStreak = habits.map(habit => ({
+        const response = habits.map(habit => ({
             ...habit._doc,
-            streak: calculateStreak(habit.completedHistory)
+            currentStreak: calculateCurrentStreak( habit.completedHistory, habit.frequency ),
+            longestStreak: calculateLongestStreak( habit.completedHistory, habit.frequency )
         }));
-        res.json(habitsWithStreak);
-    } catch (error) {
+        res.json(response);
+    }
+    catch (error) {
         res.status(500).json({
             message: error.message
         });
@@ -94,7 +101,11 @@ const completeHabit = async (req, res) => {
             duration: req.body.duration || 0
         });
         await habit.save();
-        res.json(habit);
+        res.json({
+            ...habit._doc,
+            currentStreak: calculateCurrentStreak( habit.completedHistory, habit.frequency ),
+            longestStreak: calculateLongestStreak( habit.completedHistory, habit.frequency )
+        });
     } catch (error) {
         res.status(500).json({
             message: error.message
@@ -150,107 +161,16 @@ const updateHabit = async (req, res) => {
             habit.frequency = frequency;
         }
         const updatedHabit = await habit.save();
-        res.json(updatedHabit);
+        res.json({
+            ...updatedHabit._doc,
+            currentStreak: calculateCurrentStreak( updatedHabit.completedHistory, updatedHabit.frequency ),
+            longestStreak: calculateLongestStreak( updatedHabit.completedHistory, updatedHabit.frequency )
+        });
     } catch (error) {
         res.status(500).json({
             message: error.message
         });
     }
-};
-
-const calculateStreak = (completedHistory, frequency) => {
-    if (!completedHistory || completedHistory.length === 0) {
-        return 0;
-    }
-    const dates = completedHistory.map(entry => { const d = new Date(entry.completedAt);
-        d.setHours(0, 0, 0, 0);
-        return d;
-    }).sort((a, b) => b.getTime() - a.getTime());
-    let expected = new Date();
-    expected.setHours(0, 0, 0, 0);
-    if (!matchesPeriod(dates[0], expected, frequency)) {
-        expected = moveBack(expected, frequency);
-    }
-    let streak = 0;
-    for (const date of dates) {
-        if (matchesPeriod(date, expected, frequency)) {
-            streak++;
-            expected = moveBack(expected, frequency);
-        } else {
-            break;
-        }
-    }
-    return streak;
-};
-
-const calculateLongestStreak = (completedHistory) => {
-    if (!completedHistory || completedHistory.length === 0) {
-        return 0;
-    }
-    const dates = completedHistory.map(item => new Date(item.completedAt)).sort((a, b) => a - b);
-    let longest = 1;
-    let current = 1;
-    for (let i = 1; i < dates.length; i++) {
-        const previous = new Date(dates[i - 1]);
-        const currentDate = new Date(dates[i]);
-        previous.setHours(0,0,0,0);
-        currentDate.setHours(0,0,0,0);
-        const diff = (currentDate - previous) / (1000 * 60 * 60 * 24);
-        if (diff === 1) {
-            current++;
-        } else {
-            current = 1;
-        }
-        longest = Math.max(longest, current);
-    }
-    return longest;
-};
-
-const moveBack = (date, frequency) => {
-    const d = new Date(date);
-    switch (frequency) {
-        case 'Daily':
-            d.setDate(d.getDate() - 1);
-            break;
-        case 'Weekly':
-            d.setDate(d.getDate() - 7);
-            break;
-        case 'Monthly':
-            d.setMonth(d.getMonth() - 1);
-            break;
-    }
-    d.setHours(0, 0, 0, 0);
-    return d;
-};
-
-const matchesPeriod = (date1, date2, frequency) => {
-    switch (frequency) {
-        case 'Daily':
-            return date1.toDateString() === date2.toDateString();
-        case 'Weekly':
-            return isSameWeek(date1, date2);
-        case 'Monthly':
-            return (
-                date1.getMonth() === date2.getMonth() &&
-                date1.getFullYear() === date2.getFullYear()
-            );
-        default:
-            return false;
-    }
-};
-
-const isSameWeek = (date1, date2) => {
-    const startOfWeek = (date) => {
-        const d = new Date(date);
-        const day = d.getDay();
-        const diff = day === 0 ? -6 : 1 - day;
-        d.setDate(d.getDate() + diff);
-        d.setHours(0, 0, 0, 0);
-        return d;
-    };
-    return (
-        startOfWeek(date1).getTime() === startOfWeek(date2).getTime()
-    );
 };
 
 const getHabitById = async (req, res) => {
@@ -264,8 +184,8 @@ const getHabitById = async (req, res) => {
         }
         res.json({
             ...habit._doc,
-            streak: calculateStreak( habit.completedHistory, habit.frequency ),            
-            longestStreak: calculateLongestStreak(habit.completedHistory)
+            currentStreak: calculateCurrentStreak( habit.completedHistory, habit.frequency ),
+            longestStreak: calculateLongestStreak( habit.completedHistory, habit.frequency )
         });
 
     } catch (error) {
