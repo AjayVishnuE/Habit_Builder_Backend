@@ -16,9 +16,11 @@ app.use(express.json());
 
 const userRoutes = require('./routes/userRoutes');
 const habitRoutes = require('./routes/habitRoutes');
+const diaryRoutes = require('./routes/diaryRoutes');
 
 app.use('/api/users', userRoutes);
 app.use('/api/habits', habitRoutes);
+app.use('/api/diaries', diaryRoutes);
 
 app.get('/', (req, res) => {
     res.send('Backend Running');
