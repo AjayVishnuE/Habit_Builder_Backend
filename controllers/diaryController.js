@@ -1,30 +1,45 @@
 const Diary = require('../models/Diary');
 
 // CREATE DIARY
+// CREATE DIARY
 const createDiary = async (req, res) => {
     try {
         const { title, content } = req.body;
-
         if (!title || !title.trim()) {
             return res.status(400).json({
                 message: 'Diary title is required'
             });
         }
-
         if (!content || !content.trim()) {
             return res.status(400).json({
                 message: 'Diary content is required'
             });
         }
+        // Get today's date range
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date();
+        endOfDay.setHours(23, 59, 59, 999);
 
+        // Check whether user already has a diary today
+        const existingDiary = await Diary.findOne({
+            user: req.user._id,
+            createdAt: {
+                $gte: startOfDay,
+                $lte: endOfDay
+            }
+        });
+        if (existingDiary) {
+            return res.status(400).json({
+                message: 'You have already written a diary for today.'
+            });
+        }
         const diary = await Diary.create({
             user: req.user._id,
             title: title.trim(),
             content
         });
-
         res.status(201).json(diary);
-
     } catch (error) {
         res.status(500).json({
             message: error.message
