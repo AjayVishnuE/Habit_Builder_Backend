@@ -18,11 +18,13 @@ const userRoutes = require('./routes/userRoutes');
 const habitRoutes = require('./routes/habitRoutes');
 const diaryRoutes = require('./routes/diaryRoutes');
 const taskRoutes = require('./routes/taskRoutes');
+const noteRoutes = require('./routes/noteRoutes');
 
 app.use('/api/users', userRoutes);
 app.use('/api/habits', habitRoutes);
 app.use('/api/diaries', diaryRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/notes', noteRoutes);
 
 app.get('/', (req, res) => {
     res.send('Backend Running');
