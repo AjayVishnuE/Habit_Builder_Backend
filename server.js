@@ -1,8 +1,9 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
-
 const connectDB = require('./config/db');
+const { createRouteHandler } = require('uploadthing/express');
+const { uploadRouter } = require('./uploadthing');
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use('/api/habits', habitRoutes);
 app.use('/api/diaries', diaryRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/notes', noteRoutes);
+app.use( '/api/uploadthing', createRouteHandler({ router: uploadRouter }) );
 
 app.get('/', (req, res) => {
     res.send('Backend Running');
