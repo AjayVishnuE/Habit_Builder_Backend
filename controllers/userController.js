@@ -5,6 +5,8 @@ const Habit = require('../models/Habit');
 const Diary = require('../models/Diary');
 const Task = require('../models/Task');
 const Note = require('../models/Note');
+const crypto = require('crypto');
+const { sendPasswordResetEmail } = require('../services/emailService');
 
 const registerUser = async (req, res) => {
     try {
@@ -406,11 +408,108 @@ const getProfileStats = async (req, res) => {
     }
 };
 
+const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({
+                message: 'Email is required'
+            });
+        }
+        const user = await User.findOne({
+            email: email.toLowerCase().trim()
+        });
+        /*
+         * Don't reveal whether the email exists.
+         * This prevents account enumeration.
+         */
+        if (!user) {
+            return res.status(200).json({
+                message: 'If an account exists with that email, a password reset link has been sent.'
+            });
+        }
+
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+        user.resetPasswordToken = hashedToken;
+        user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+        await user.save();
+        const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+        await sendPasswordResetEmail(
+            user.email,
+            user.name,
+            resetUrl
+        );
+        return res.status(200).json({
+            message: 'If an account exists with that email, a password reset link has been sent.'
+        });
+    } catch (error) {
+        console.error(
+            'Forgot password error:',
+            error
+        );
+
+        return res.status(500).json({
+            message:
+                'Something went wrong. Please try again later.'
+        });
+    }
+};
+
+const resetPassword = async (req, res) => {
+    try {
+        const { token } = req.params;
+        const { password } = req.body;
+        if (!password) {
+            return res.status(400).json({
+                message: 'Password is required'
+            });
+        }
+        if (password.length < 6) {
+            return res.status(400).json({
+                message:
+                    'Password must be at least 6 characters'
+            });
+        }
+        const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+        const user = await User.findOne({ resetPasswordToken: hashedToken, resetPasswordExpires: { $gt: Date.now() } });
+
+        if (!user) {
+            return res.status(400).json({
+                message: 'Password reset link is invalid or has expired'
+            });
+        }
+        /*
+         * Your existing project already hashes passwords
+         * during registration, so use the same bcrypt
+         * approach here.
+         */
+        const bcrypt = require('bcryptjs');
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash( password, salt );
+        user.resetPasswordToken = null;
+        user.resetPasswordExpires = null;
+        await user.save();
+        return res.status(200).json({
+            message:'Password reset successfully'
+        });
+    } catch (error) {
+        console.error( 'Reset password error:', error );
+        return res.status(500).json({
+            message: 'Something went wrong. Please try again later.'
+        });
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
     getMe,
     getProfile,
     updateProfile,
-    getProfileStats
+    getProfileStats,
+    forgotPassword,
+    resetPassword
 };

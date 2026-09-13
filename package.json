@@ -17,6 +17,7 @@
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.24.0",
+    "resend": "^6.28.0",
     "uploadthing": "^7.7.4"
   },
   "devDependencies": {
