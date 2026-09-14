@@ -17,11 +17,21 @@ const diarySchema = new mongoose.Schema(
         content: {
             type: String,
             required: true
+        },
+        diaryDate: {
+            type: Date,
+            default: Date.now
         }
+
     },
     {
         timestamps: true
     }
+);
+
+diarySchema.index(
+    { user: 1, diaryDate: 1 },
+    { unique: true, sparse: true }
 );
 
 module.exports = mongoose.model('Diary', diarySchema);
