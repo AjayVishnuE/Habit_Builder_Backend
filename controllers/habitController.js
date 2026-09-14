@@ -113,6 +113,62 @@ const completeHabit = async (req, res) => {
     }
 };
 
+const updateCompletion = async (req, res) => {
+    try {
+        const habit = await Habit.findById(req.params.id);
+        if (!habit) {
+            return res.status(404).json({
+                message: 'Habit not found'
+            });
+        }
+        if (habit.user.toString() !== req.user._id.toString()) {
+            return res.status(401).json({
+                message: 'Not authorized'
+            });
+        }
+        const completion = habit.completedHistory.id(
+            req.params.completionId
+        );
+        if (!completion) {
+            return res.status(404).json({
+                message: 'Completion record not found'
+            });
+        }
+        const { mood, duration, remark } = req.body;
+        if (mood !== undefined) {
+            completion.mood = mood;
+        }
+        if (duration !== undefined) {
+            if (typeof duration !== 'number' || duration < 0) {
+                return res.status(400).json({
+                    message: 'Duration must be a non-negative number'
+                });
+            }
+            completion.duration = duration;
+        }
+        if (remark !== undefined) {
+            completion.remark = remark;
+        }
+        await habit.save();
+        res.json({
+            ...habit._doc,
+            currentStreak: calculateCurrentStreak(
+                habit.completedHistory,
+                habit.frequency
+            ),
+            longestStreak: calculateLongestStreak(
+                habit.completedHistory,
+                habit.frequency
+            )
+        });
+    } catch (error) {
+        console.error('Update completion error:', error);
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
+
 const deleteHabit = async (req, res) => {
     try {
         const habit = await Habit.findById(req.params.id);
@@ -205,5 +261,6 @@ module.exports = {
     completeHabit,
     deleteHabit,
     updateHabit,
-    getHabitById
+    getHabitById,
+    updateCompletion
 };

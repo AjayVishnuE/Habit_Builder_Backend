@@ -9,6 +9,7 @@ const {
     deleteHabit,
     updateHabit,
     getHabitById,
+    updateCompletion
 } = require('../controllers/habitController');
 
 const {
@@ -21,5 +22,6 @@ router.put('/:id/complete', protect, completeHabit);
 router.delete('/:id', protect, deleteHabit);
 router.put('/:id', protect, updateHabit);
 router.get('/:id', protect, getHabitById);
+router.patch( '/:id/completions/:completionId', protect, updateCompletion );
 
 module.exports = router;
