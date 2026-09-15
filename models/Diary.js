@@ -20,7 +20,6 @@ const diarySchema = new mongoose.Schema(
         },
         diaryDate: {
             type: Date,
-            default: Date.now
         }
 
     },
