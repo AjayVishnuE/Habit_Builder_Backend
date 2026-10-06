@@ -38,7 +38,6 @@ const registerUser = async (req, res) => {
     }
 };
 
-
 const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -111,7 +110,6 @@ const updateProfile = async (req, res) => {
         });
     }
 };
-
 
 const getProfileStats = async (req, res) => {
     try {
@@ -503,6 +501,38 @@ const resetPassword = async (req, res) => {
     }
 };
 
+const deleteAccount = async (req, res) => {
+    const session = await User.startSession();
+    try {
+        const userId = req.user._id;
+        await session.withTransaction(async () => {
+            // Delete all user-owned data
+            await Habit.deleteMany({ user: userId }, { session });
+            await Task.deleteMany({ user: userId }, { session });
+            await Diary.deleteMany({ user: userId }, { session });
+            await Note.deleteMany({ user: userId }, { session });
+            // Finally delete the user account
+            const deletedUser = await User.findByIdAndDelete(userId, { session });
+            if (!deletedUser) {
+                throw new Error('User account not found.');
+            }
+        });
+        res.status(200).json({
+            message: 'Account and all associated data deleted successfully.'
+        });
+    } catch (error) {
+        console.error('Delete account error:', error);
+        if (error.message === 'User account not found.') {
+            return res.status(404).json({ message: 'User account not found.' });
+        }
+        res.status(500).json({
+            message: 'Failed to delete account.'
+        });
+    } finally {
+        await session.endSession();
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
@@ -511,5 +541,6 @@ module.exports = {
     updateProfile,
     getProfileStats,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    deleteAccount
 };

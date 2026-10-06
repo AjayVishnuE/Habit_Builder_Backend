@@ -14,11 +14,11 @@ const sendPasswordResetEmail = async (
 
         from:
             process.env.EMAIL_FROM ||
-            'Habit Builder <onboarding@resend.dev>',
+            'DayLivo <onboarding@resend.dev>',
 
         to: [email],
 
-        subject: 'Reset your Habit Builder password',
+        subject: 'Reset your DayLivo password',
 
         html: `
             <div style="
@@ -30,7 +30,7 @@ const sendPasswordResetEmail = async (
             ">
 
                 <h2>
-                    Reset your Habit Builder password
+                    Reset your DayLivo password
                 </h2>
 
                 <p>
@@ -39,7 +39,7 @@ const sendPasswordResetEmail = async (
 
                 <p>
                     We received a request to reset the password
-                    for your Habit Builder account.
+                    for your DayLivo account.
                 </p>
 
                 <p>
@@ -79,7 +79,7 @@ const sendPasswordResetEmail = async (
                     color: #777;
                     font-size: 13px;
                 ">
-                    Habit Builder
+                    DayLivo
                 </p>
 
             </div>
