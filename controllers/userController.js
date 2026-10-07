@@ -7,6 +7,7 @@ const Task = require('../models/Task');
 const Note = require('../models/Note');
 const crypto = require('crypto');
 const { sendPasswordResetEmail } = require('../services/emailService');
+const { deleteUploadThingFile } = require('../utils/uploadThing');
 
 const registerUser = async (req, res) => {
     try {
@@ -502,34 +503,43 @@ const resetPassword = async (req, res) => {
 };
 
 const deleteAccount = async (req, res) => {
-    const session = await User.startSession();
     try {
         const userId = req.user._id;
-        await session.withTransaction(async () => {
-            // Delete all user-owned data
-            await Habit.deleteMany({ user: userId }, { session });
-            await Task.deleteMany({ user: userId }, { session });
-            await Diary.deleteMany({ user: userId }, { session });
-            await Note.deleteMany({ user: userId }, { session });
-            // Finally delete the user account
-            const deletedUser = await User.findByIdAndDelete(userId, { session });
-            if (!deletedUser) {
-                throw new Error('User account not found.');
-            }
+        // Get the user first so we can retrieve the
+        // UploadThing profile image before deleting the account.
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                message: 'User account not found.'
+            });
+        }
+        // Delete profile image from UploadThing if one exists.
+        if (user.profileImage) {
+            await deleteUploadThingFile(user.profileImage);
+        }
+        // Delete all user-owned data.
+        await Habit.deleteMany({
+            user: userId
         });
+        await Task.deleteMany({
+            user: userId
+        });
+        await Diary.deleteMany({
+            user: userId
+        });
+        await Note.deleteMany({
+            user: userId
+        });
+        // Finally delete the user account.
+        await User.findByIdAndDelete(userId);
         res.status(200).json({
             message: 'Account and all associated data deleted successfully.'
         });
     } catch (error) {
         console.error('Delete account error:', error);
-        if (error.message === 'User account not found.') {
-            return res.status(404).json({ message: 'User account not found.' });
-        }
         res.status(500).json({
             message: 'Failed to delete account.'
         });
-    } finally {
-        await session.endSession();
     }
 };
 
